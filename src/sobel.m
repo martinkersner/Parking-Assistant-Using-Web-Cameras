@@ -10,10 +10,10 @@
 
 function Y = sobel(IMG)
 
-    % input convolutional masks
+    % convolutional masks for each axis
     Sx = [ -1 -2 -1; 
             0  0  0;
-            1  2  1];
+            1  2  1 ];
 
     Sy = Sx';
 
@@ -26,7 +26,5 @@ function Y = sobel(IMG)
 
     % normalize magnitude
     Y = normalize2(M);
-    max(max(Y))
-    min(min(Y))
 
 endfunction
