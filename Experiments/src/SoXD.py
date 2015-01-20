@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Parking Assistant Using Web Cameras
 # Martin Kersner's Master Thesis
 #
@@ -68,7 +69,8 @@ class SoXD:
             min_sxd = np.multiply(min_sxd, sxd_mask2) + np.multiply(sxd, sxd_mask)
             disparity = np.multiply(disparity, sxd_mask2) + np.multiply(np.ones_like(self.imgL), sxd_mask) * k
 
-        return self.normalize2(disparity)*255
+        #return self.normalize2(disparity)*255
+        return self.normalize2(disparity)
 
     def normalize2(self, X):
         x_min = np.amin(X)

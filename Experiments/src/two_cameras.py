@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Parking Assistant Using Web Cameras
 # Martin Kersner's Master Thesis
 #
