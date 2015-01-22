@@ -21,6 +21,7 @@ class ParkingScene():
     J      = None
     K      = None
     P      = None
+    A      = None
 
     def __init__(self, file_name):
         if (os.path.isfile(file_name)):
@@ -40,13 +41,15 @@ class ParkingScene():
 
         # car
         self.P = self.get_point()
+        self.A = self.get_number()
 
     def get_params(self):
         self.params = dict( H = self.H,
                             I = self.I,
                             J = self.J,
                             K = self.K,
-                            P = self.P )
+                            P = self.P,
+                            A = self.A )
 
         return self.params
 
@@ -54,6 +57,11 @@ class ParkingScene():
         for line in self.f:
             if (not self.is_empty(line)):
                 return self.create_point(line)
+
+    def get_number(self):
+        for line in self.f:
+            if (not self.is_empty(line)):
+                return int(line)
 
     def create_point(self, string):
         spl = string.split()
