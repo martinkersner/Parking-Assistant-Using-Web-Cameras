@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 # Parking Assistant Using Web Cameras
 # Martin Kersner's Master Thesis
 #
@@ -52,8 +53,11 @@ class SoXD:
         return signal.convolve2d(squared_diff, self.window, mode='same')
 
     def get_disparity(self):
+        #  TODO use the maximum value of integer
+        default_intensity = 100000
+
         disparity = np.zeros_like(self.imgL)
-        min_sxd   = np.ones_like(self.imgL) * 100000
+        min_sxd   = np.ones_like(self.imgL) * default_intensity
 
         for k in range(0, self.max_shift):
             shift_imgR = self.shift_image(self.imgR, k)
@@ -69,7 +73,8 @@ class SoXD:
             min_sxd = np.multiply(min_sxd, sxd_mask2) + np.multiply(sxd, sxd_mask)
             disparity = np.multiply(disparity, sxd_mask2) + np.multiply(np.ones_like(self.imgL), sxd_mask) * k
 
-        #return self.normalize2(disparity)*255
+        # removing outliers
+        disparity = cv2.medianBlur(disparity, 11)
         return self.normalize2(disparity)
 
     def normalize2(self, X):
