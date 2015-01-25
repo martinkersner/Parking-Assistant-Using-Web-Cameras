@@ -50,4 +50,3 @@ class QualityMetrics:
         mask = np.fabs(self.dc-self.dt) > threshold
 
         return np.sum(mask.reshape((1, noe))) / noe
-
