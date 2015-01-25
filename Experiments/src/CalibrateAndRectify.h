@@ -37,24 +37,24 @@ class CalibrateAndRectify {
     //std::vector<std::string > GetFileNames(std::string & path);
     std::vector<StringPair> 
     GetFileNames( std::string & path,
-                  int numberFrames );
+                  int numberImages );
 
     void 
     StereoCalibrate( StringPair & sp,
                      cv::Size chessboardSize,
-                     std::vector<std::vector<cv::Point2f>> * framePoints );
+                     std::vector<std::vector<cv::Point2f>> * imagePoints );
 
     cv::Size 
-    GetFrameSize( std::vector<StringPair> & vecStringPairs );
+    GetImageSize( std::vector<StringPair> & vecStringPairs );
 
     double 
-    ComputePartlyError( std::vector<std::vector<cv::Point2f>> * framePoints, 
+    ComputePartlyError( std::vector<std::vector<cv::Point2f>> * imagePoints, 
                         std::vector<cv::Vec3f> * lines, 
                         int npt,
                         int i );
 
     std::vector<std::vector<cv::Point3f>>
-    PrepareObjectPoints( int numberFrames,
+    PrepareObjectPoints( int numberImages,
                          cv::Size chessboardSize );
 
     void 
@@ -67,32 +67,51 @@ class CalibrateAndRectify {
     SaveDistortionCameraModels();
 
     bool 
-    FindStereoChessboardCorners( cv::Mat frameLeft, 
-                                 cv::Mat frameRight, 
+    FindStereoChessboardCorners( cv::Mat imageLeft, 
+                                 cv::Mat imageRight, 
                                  cv::Size chessboardSize,
-                                 std::vector<std::vector<cv::Point2f>> * framePoints );
+                                 std::vector<std::vector<cv::Point2f>> * imagePoints );
 
     void 
     CalibrateStereoCamera( cv::Size chessboardSize, 
-                           cv::Size frameSize,
-                           int numberFrames,
-                           std::vector<std::vector<cv::Point2f>> * framePoints );
+                           cv::Size imageSize,
+                           int numberImages,
+                           std::vector<std::vector<cv::Point2f>> * imagePoints );
+
+    void
+    LoadIntrinsics();
+
+    void
+    LoadExtrinsics();
+
+    void 
+    LoadDistortionCameraModels();
 
     public:
+        // Real-time calibrating
+        CalibrateAndRectify(cv::Size chessboardSize);
+
         // Calibration utility
         // compute intrinsic and extrinsic camera parameters
         // TODO reimplement
         //      find out number of images from given directory containing images
         //CalibrateStereoCamera(std::string pathToImages);
-        CalibrateAndRectify(std::string pathToImages, 
-                            int numberImages, 
-                            cv::Size chessboardSize );
+        CalibrateAndRectify( std::string pathToImages, 
+                             int numberImages, 
+                             cv::Size chessboardSize );
 
         // Rectification utility
         // load given intrinsic and extrinsic parameters
-        //CalibrateAndRectify(std::string intrinsics, std::string extrinsics);
+        CalibrateAndRectify( std::string intrinsics, 
+                             std::string extrinsics );
         
-        void
-        RemapImage( cv::Mat leftImage, 
-                    cv::Mat rightImage );
+        cv::Mat
+        RemapLeftImage( cv::Mat leftImage );
+
+        cv::Mat
+        RemapRightImage( cv::Mat RightImage );
+
+        cv::Mat
+        DrawComparingLines( cv::Mat leftImage, 
+                            cv::Mat rightImage );
 };

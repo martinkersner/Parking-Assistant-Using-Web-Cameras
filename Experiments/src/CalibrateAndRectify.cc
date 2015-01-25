@@ -2,45 +2,100 @@
  * Parking Assistant Using Web Cameras
  * Martin Kersner's Master Thesis
  *
- * Stereo Calibrating of Horizontally aligned camera
+ * Stereo Calibrating of Horizontally aligned cameras
  *
  * m.kersner@gmail.com
  * 01/24/2015
  */
 
-#include "CalibrateAndRectify.hh"
+#include "CalibrateAndRectify.h"
+#include "Fps.h"
 
 // TODO application arguments
-//      frames -> images
+//      realtime calibrating
 
 int main(int argc, char ** argv) {
 
     // TODO replace with application arguments
     std::string path          = "chessboard2/";
-    const int numberImages    = 11; // temporary solution
+    const int numberImages    = 21; // temporary solution
 
     const float square_size   = 2.5; 
     const int rows            = 9;
     const int cols            = 6;
     cv::Size chessboardSize = cv::Size(rows, cols);
 
-    CalibrateAndRectify cr(path, numberImages, chessboardSize);
+    CalibrateAndRectify cr(chessboardSize);
 
-    //cv::Mat left = cv::imread("chessboard2/left0.ppm");
-    //cr.RemapImage(left, left);
+    //CalibrateAndRectify cr(path, numberImages, chessboardSize);
+
+    //cv::Mat left = cv::imread("chessboard2/left9.ppm");
+    //cv::Mat right = cv::imread("chessboard2/right9.ppm");
+
+    //cv::Mat leftRepaired = cr.RemapLeftImage(left);
+    //cv::Mat rightRepaired = cr.RemapRightImage(right);
 
     return EXIT_SUCCESS;
 }
 
 CalibrateAndRectify::
-CalibrateAndRectify(std::string pathToImages, int numberImages, cv::Size chessboardSize)
+CalibrateAndRectify( cv::Size chessboardSize )
+{
+    FPS fps;
+    cv::VideoCapture capLeft(1); // open the Left camera 
+    cv::VideoCapture capRight(2); // open the Right camera
+
+    if(!capLeft.isOpened() || !capRight.isOpened())  // check if we succeeded
+    {
+        std::cerr << "ERROR: Could not open cameras." << std::endl;
+    }
+
+    cv::namedWindow("Left",1);
+    cv::namedWindow("Right",1);
+
+    char k;
+    cv::Mat frameLeft;
+    cv::Mat frameRight;
+
+    while (true)
+    {   
+        bool isValid = true;
+
+        fps.before();
+        capLeft >> frameLeft; // get a new frame from left camera 
+        capRight >> frameRight; //get a new frame from right camera
+        fps.after();
+
+        std::string text = "FPS: " + std::to_string((int)fps.getFps());
+        cv::putText( frameLeft, 
+                     text, 
+                     cv::Point(40,40),
+                     cv::FONT_HERSHEY_SIMPLEX,
+                     0.5,
+                     cv::Scalar(255,0,0) );
+
+        cv::imshow("Left", frameLeft);
+        cv::imshow("Right", frameRight);
+
+        k = cv::waitKey(30);
+
+        if (k == 'q')
+            break;
+
+    }
+}
+
+CalibrateAndRectify::
+CalibrateAndRectify( std::string pathToImages, 
+                     int numberImages, 
+                     cv::Size chessboardSize )
 {
     // 2D points in image plane
     std::vector<std::vector<cv::Point2f>> imagePoints[2]; 
 
     std::vector<StringPair> vecStringPairs = GetFileNames(pathToImages, numberImages);
 
-    cv::Size imageSize = GetFrameSize(vecStringPairs);
+    cv::Size imageSize = GetImageSize(vecStringPairs);
 
     int i = 0;
     for (StringPair sp : vecStringPairs) {
@@ -54,13 +109,69 @@ CalibrateAndRectify(std::string pathToImages, int numberImages, cv::Size chessbo
                            imagePoints );
 }
 
+CalibrateAndRectify::
+CalibrateAndRectify( std::string intrinsics,
+                     std::string extrinsic )
+{
+    LoadIntrinsics();
+    LoadExtrinsics();
+    LoadDistortionCameraModels();
+}
+
+void CalibrateAndRectify::
+LoadIntrinsics() 
+{
+    cv::FileStorage fs("intrinsics.yml", cv::FileStorage::READ); 
+
+    if (fs.isOpened()) {
+        fs["M1"] >> this->cameraMatrix[0];
+        fs["D1"] >> this->distCoeffs[0];
+        fs["M2"] >> this->cameraMatrix[1];
+        fs["D2"] >> this->distCoeffs[1];
+
+        fs.release();
+    }
+}
+
+void CalibrateAndRectify::
+LoadExtrinsics() 
+{
+    cv::FileStorage fs("extrinsics.yml", cv::FileStorage::READ); 
+
+    if (fs.isOpened()) {
+        fs["R"]  >> this->R;
+        fs["T"]  >> this->T;
+        fs["R1"] >> this->R1;
+        fs["R2"] >> this->R2;
+        fs["P1"] >> this->P1;
+        fs["P2"] >> this->P2;
+        fs["Q"]  >> this->Q;
+    }
+}
+
+void CalibrateAndRectify::
+LoadDistortionCameraModels()
+{
+    cv::FileStorage fs("distortion_camera_models.yml", cv::FileStorage::READ);
+
+    if (fs.isOpened()) {
+        fs["MX1"] >> this->rmap[0][0];
+        fs["MY1"] >> this->rmap[0][1];
+        fs["MX2"] >> this->rmap[1][0];
+        fs["MY2"] >> this->rmap[1][1];
+
+        fs.release();
+    }
+}
+
+// TODO find better way of storing left and right images
 std::vector<StringPair> CalibrateAndRectify::
 GetFileNames( std::string & path, 
-              int numberFrames ) 
+              int numberImages ) 
 {
     std::vector<StringPair> vecStringPairs;
 
-    for (int i = 0; i < numberFrames; ++i) {
+    for (int i = 0; i < numberImages; ++i) {
         StringPair sp; // {left_image, right_image}
         //sp.push_back(path + std::to_string(i) + "_left.png");
         //sp.push_back(path + std::to_string(i) + "_right.png");
@@ -76,12 +187,12 @@ GetFileNames( std::string & path,
 void CalibrateAndRectify::
 StereoCalibrate( StringPair & sp,
                  cv::Size chessboardSize,
-                 std::vector<std::vector<cv::Point2f>> * framePoints )
+                 std::vector<std::vector<cv::Point2f>> * imagePoints )
 {
-    cv::Mat frameLeft = cv::imread(sp.at(0));
-    cv::Mat frameRight = cv::imread(sp.at(1));
+    cv::Mat imageLeft = cv::imread(sp.at(0));
+    cv::Mat imageRight = cv::imread(sp.at(1));
 
-    FindStereoChessboardCorners(frameLeft, frameRight, chessboardSize, framePoints);
+    FindStereoChessboardCorners(imageLeft, imageRight, chessboardSize, imagePoints);
 }
 
 /**
@@ -89,26 +200,26 @@ StereoCalibrate( StringPair & sp,
  * is checked.
  */
 cv::Size CalibrateAndRectify::
-GetFrameSize( std::vector<StringPair> & vecStringPairs ) 
+GetImageSize( std::vector<StringPair> & vecStringPairs ) 
 {
-    cv::Mat tmpFrame = cv::imread(vecStringPairs.at(0).at(0));
-    return tmpFrame.size();
+    cv::Mat tmpImage = cv::imread(vecStringPairs.at(0).at(0));
+    return tmpImage.size();
 }
 
 bool CalibrateAndRectify::
-FindStereoChessboardCorners( cv::Mat frameLeft, 
-                             cv::Mat frameRight, 
+FindStereoChessboardCorners( cv::Mat imageLeft, 
+                             cv::Mat imageRight, 
                              cv::Size chessboardSize,
-                             std::vector<std::vector<cv::Point2f>> * framePoints )
+                             std::vector<std::vector<cv::Point2f>> * imagePoints )
 {
-    //cv::Mat frameLeftOriginal  = frameLeft;
-    //cv::Mat frameRightOriginal = frameRight;
+    //cv::Mat imageLeftOriginal  = imageLeft;
+    //cv::Mat imageRightOriginal = imageRight;
 
     bool foundLeft  = false;
     bool foundRight = false;
 
-    cv::cvtColor(frameLeft,  frameLeft,  cv::COLOR_BGR2GRAY);
-    cv::cvtColor(frameRight, frameRight, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(imageLeft,  imageLeft,  cv::COLOR_BGR2GRAY);
+    cv::cvtColor(imageRight, imageRight, cv::COLOR_BGR2GRAY);
 
     std::vector<cv::Point2f> cornersLeft;
     std::vector<cv::Point2f> cornersRight;
@@ -117,19 +228,19 @@ FindStereoChessboardCorners( cv::Mat frameLeft,
                 cv::CALIB_CB_NORMALIZE_IMAGE;
                 //cv::CALIB_CB_FAST_CHECK;
 
-    foundLeft = cv::findChessboardCorners( frameLeft, 
+    foundLeft = cv::findChessboardCorners( imageLeft, 
                                            chessboardSize, 
                                            cornersLeft, 
                                            flags );
 
-    foundRight = cv::findChessboardCorners( frameRight, 
+    foundRight = cv::findChessboardCorners( imageRight, 
                                             chessboardSize, 
                                             cornersRight, 
                                             flags );
 
     // Compute corners more accurately
     if (foundLeft)
-        cornerSubPix( frameLeft,
+        cornerSubPix( imageLeft,
                       cornersLeft, 
                       cv::Size(11,11), cv::Size(-1,-1), 
                       cv::TermCriteria( cv::TermCriteria::EPS+cv::TermCriteria::MAX_ITER, 
@@ -137,7 +248,7 @@ FindStereoChessboardCorners( cv::Mat frameLeft,
                                         0.1 ));
 
     if (foundRight)
-        cornerSubPix( frameRight,
+        cornerSubPix( imageRight,
                       cornersRight, 
                       cv::Size(11,11), cv::Size(-1,-1), 
                       cv::TermCriteria( cv::TermCriteria::EPS+cv::TermCriteria::MAX_ITER, 
@@ -145,11 +256,11 @@ FindStereoChessboardCorners( cv::Mat frameLeft,
                                         0.1 ));
 
     // TODO delete?
-    //drawChessboardCorners(frameLeftOriginal, boardSize, cornersLeft, foundLeft);
-    //drawChessboardCorners(frameRightOriginal, boardSize, cornersRight, foundRight);
+    //drawChessboardCorners(imageLeftOriginal, boardSize, cornersLeft, foundLeft);
+    //drawChessboardCorners(imageRightOriginal, boardSize, cornersRight, foundRight);
     
-    framePoints[0].push_back(cornersLeft);
-    framePoints[1].push_back(cornersRight);
+    imagePoints[0].push_back(cornersLeft);
+    imagePoints[1].push_back(cornersRight);
 
     // TODO necessary?
     if (foundLeft && foundRight)
@@ -161,7 +272,7 @@ FindStereoChessboardCorners( cv::Mat frameLeft,
 void CalibrateAndRectify::
 SaveIntrinsics() 
 {
-    cv::FileStorage fs("intrinsics.xml", cv::FileStorage::WRITE);
+    cv::FileStorage fs("intrinsics.yml", cv::FileStorage::WRITE);
 
     if (fs.isOpened()) {
         fs << "M1" << this->cameraMatrix[0]
@@ -176,7 +287,7 @@ SaveIntrinsics()
 void CalibrateAndRectify::
 SaveExtrinsics()
 {
-    cv::FileStorage fs("extrinsics.xml", cv::FileStorage::WRITE);
+    cv::FileStorage fs("extrinsics.yml", cv::FileStorage::WRITE);
 
     if (fs.isOpened()) {
         fs << "R"  << this->R 
@@ -194,7 +305,7 @@ SaveExtrinsics()
 void CalibrateAndRectify::
 SaveDistortionCameraModels()
 {
-    cv::FileStorage fs("distortion_camera_models.xml", cv::FileStorage::WRITE);
+    cv::FileStorage fs("distortion_camera_models.yml", cv::FileStorage::WRITE);
 
     if (fs.isOpened()) {
         fs << "MX1"  << this->rmap[0][0]
@@ -207,7 +318,7 @@ SaveDistortionCameraModels()
 }
 
 double CalibrateAndRectify::
-ComputePartlyError( std::vector<std::vector<cv::Point2f>> * framePoints, 
+ComputePartlyError( std::vector<std::vector<cv::Point2f>> * imagePoints, 
                     std::vector<cv::Vec3f> * lines, 
                     int npt,
                     int i )
@@ -216,12 +327,12 @@ ComputePartlyError( std::vector<std::vector<cv::Point2f>> * framePoints,
     double errij = 0;
 
     for(int j = 0; j < npt; j++ ) {
-        errij = fabs( framePoints[0][i][j].x*lines[1][j][0] +
-                      framePoints[0][i][j].y*lines[1][j][1] + 
+        errij = fabs( imagePoints[0][i][j].x*lines[1][j][0] +
+                      imagePoints[0][i][j].y*lines[1][j][1] + 
                       lines[1][j][2] ) 
                 +
-                fabs( framePoints[1][i][j].x*lines[0][j][0] +
-                      framePoints[1][i][j].y*lines[0][j][1] + 
+                fabs( imagePoints[1][i][j].x*lines[0][j][0] +
+                      imagePoints[1][i][j].y*lines[0][j][1] + 
                       lines[0][j][2] );
 
         err += errij;
@@ -231,15 +342,15 @@ ComputePartlyError( std::vector<std::vector<cv::Point2f>> * framePoints,
 }
 
 std::vector<std::vector<cv::Point3f>> CalibrateAndRectify::
-PrepareObjectPoints( int numberFrames,
+PrepareObjectPoints( int numberImages,
                      cv::Size chessboardSize ) 
 {
     std::vector<std::vector<cv::Point3f>> objectPoints;
-    objectPoints.resize(numberFrames);
+    objectPoints.resize(numberImages);
 
     // prepare object points
     // like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-    for (int i = 0; i < numberFrames; i++) {
+    for (int i = 0; i < numberImages; i++) {
         for (int j = 0; j < chessboardSize.height; j++) {
             for (int k = 0; k < chessboardSize.width; k++) {
 
@@ -257,15 +368,15 @@ PrepareObjectPoints( int numberFrames,
 
 void CalibrateAndRectify::
 CalibrateStereoCamera( cv::Size chessboardSize, 
-                       cv::Size frameSize,
-                       int numberFrames,
-                       std::vector<std::vector<cv::Point2f>> * framePoints )
+                       cv::Size imageSize,
+                       int numberImages,
+                       std::vector<std::vector<cv::Point2f>> * imagePoints )
 {
     // 3D points in real world space
     std::vector<std::vector<cv::Point3f>> objectPoints;
 
     // we expect that corners were found in each pair of images
-    objectPoints = PrepareObjectPoints(numberFrames, chessboardSize);
+    objectPoints = PrepareObjectPoints(numberImages, chessboardSize);
 
     //cv::Mat cameraMatrix[2], distCoeffs[2];
     cameraMatrix[0] = cv::Mat::eye(3, 3, CV_64F);
@@ -274,10 +385,10 @@ CalibrateStereoCamera( cv::Size chessboardSize,
     double rms;
 
     rms = cv::stereoCalibrate( objectPoints, 
-                               framePoints[0], framePoints[1],
+                               imagePoints[0], imagePoints[1],
                                this->cameraMatrix[0], this->distCoeffs[0],
                                this->cameraMatrix[1], this->distCoeffs[1],
-                               frameSize, 
+                               imageSize, 
                                this->R, this->T, 
                                E, F,
                                cv::TermCriteria( cv::TermCriteria::COUNT + 
@@ -294,16 +405,16 @@ CalibrateStereoCamera( cv::Size chessboardSize,
     int npoints = 0;
     std::vector<cv::Vec3f> lines[2];
 
-    for (int i = 0; i < numberFrames; i++) {
+    for (int i = 0; i < numberImages; i++) {
 
         cv::Mat imgpt[2];
 
         // unnecessary part of algorithm
         // it is part related to average re-projection error
-        int npt = (int)framePoints[0][i].size(); // size or rows? what is size?
+        int npt = (int)imagePoints[0][i].size(); // size or rows? what is size?
 
         for (int k = 0; k < 2; k++) {
-            imgpt[k] = cv::Mat(framePoints[k][i]);
+            imgpt[k] = cv::Mat(imagePoints[k][i]);
 
             undistortPoints( imgpt[k], imgpt[k], 
                              this->cameraMatrix[k], 
@@ -316,7 +427,7 @@ CalibrateStereoCamera( cv::Size chessboardSize,
 
         // unnecessary part of algorithm
         // it is part related to average reprojection error
-        err += ComputePartlyError( framePoints, lines, npt, i );
+        err += ComputePartlyError( imagePoints, lines, npt, i );
         npoints += npt;
     }
 
@@ -326,14 +437,14 @@ CalibrateStereoCamera( cv::Size chessboardSize,
     cv::Rect validROI[2];
     stereoRectify( this->cameraMatrix[0], this->distCoeffs[0], 
                    this->cameraMatrix[1], this->distCoeffs[1], 
-                   frameSize, 
+                   imageSize, 
                    this->R, this->T, 
                    this->R1, this->R2, 
                    this->P1, this->P2, 
                    this->Q, 
                    cv::CALIB_ZERO_DISPARITY, 
                    1, 
-                   frameSize, 
+                   imageSize, 
                    &validROI[0], &validROI[1]);
 
     SaveExtrinsics();
@@ -345,32 +456,69 @@ CalibrateStereoCamera( cv::Size chessboardSize,
     initUndistortRectifyMap( this->cameraMatrix[0], 
                              this->distCoeffs[0], 
                              this->R1, this->P1, 
-                             frameSize, 
+                             imageSize, 
                              CV_16SC2, 
                              this->rmap[0][0], this->rmap[0][1] );
 
     initUndistortRectifyMap( this->cameraMatrix[1], 
                              this->distCoeffs[1], 
                              this->R2, this->P2, 
-                             frameSize, 
+                             imageSize, 
                              CV_16SC2,
                              this->rmap[1][0], this->rmap[1][1] );
 
      SaveDistortionCameraModels();
 }
 
-// TODO find out the way of distribution of repired images
-void CalibrateAndRectify::
-RemapImage ( cv::Mat leftImage, 
-             cv::Mat rightImage ) 
+cv::Mat CalibrateAndRectify::
+RemapLeftImage ( cv::Mat leftImage ) 
 {
-    cv::Mat leftImageRepaired, rightImageRepaired;
+    cv::Mat leftImageRepaired;
 
     remap( leftImage, leftImageRepaired, 
            this->rmap[0][0], this->rmap[0][1], 
            cv::INTER_LINEAR );
 
+    return leftImageRepaired;
+}
+
+cv::Mat CalibrateAndRectify::
+RemapRightImage( cv::Mat rightImage ) 
+{
+    cv::Mat rightImageRepaired;
+
     remap( rightImage, rightImageRepaired, 
            this->rmap[1][0], this->rmap[1][1], 
            cv::INTER_LINEAR );
+
+    return rightImageRepaired;
+}
+
+/**
+ * Horizontally concatenate given images and draw lines through them.
+ * Function expect the same size of both images.
+ */
+cv::Mat CalibrateAndRectify::
+DrawComparingLines ( cv::Mat leftImage,
+                     cv::Mat rightImage )
+{
+    assert(leftImage.size() == rightImage.size());
+
+    cv::Size sz = leftImage.size();
+
+    cv::Mat compLines(sz.height, 2*sz.width, CV_8UC3);
+    cv::Mat left(compLines, cv::Rect(0, 0, sz.width, sz.height));
+    cv::Mat right(compLines, cv::Rect(sz.width, 0, sz.width, sz.height));
+
+    leftImage.copyTo(left);
+    rightImage.copyTo(right);
+
+    for (int j = 0; j < sz.height; j += 16) {
+        cv::line( compLines, 
+                  cv::Point(0, j),
+                  cv::Point(sz.width*2, j),
+                  CV_RGB(255,0,0) );
+    }
+
+    return compLines;
 }
