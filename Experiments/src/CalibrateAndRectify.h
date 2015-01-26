@@ -87,6 +87,10 @@ class CalibrateAndRectify {
     void 
     LoadDistortionCameraModels();
 
+    void
+    PutTextToImage( cv::Mat & image, 
+                    std::string text );
+
     public:
         // Real-time calibrating
         CalibrateAndRectify(cv::Size chessboardSize);
@@ -95,7 +99,7 @@ class CalibrateAndRectify {
         // compute intrinsic and extrinsic camera parameters
         // TODO reimplement
         //      find out number of images from given directory containing images
-        //CalibrateStereoCamera(std::string pathToImages);
+        //CalibrateAndRectifye(std::string pathToImages);
         CalibrateAndRectify( std::string pathToImages, 
                              int numberImages, 
                              cv::Size chessboardSize );

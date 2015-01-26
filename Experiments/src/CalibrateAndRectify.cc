@@ -12,7 +12,9 @@
 #include "Fps.h"
 
 // TODO application arguments
-//      realtime calibrating
+//      refine realtime calibrating
+//      loading/saving images from/to two directories (left, right)
+//      get a number of images from given directory (boost?)
 
 int main(int argc, char ** argv) {
 
@@ -21,10 +23,11 @@ int main(int argc, char ** argv) {
     const int numberImages    = 21; // temporary solution
 
     const float square_size   = 2.5; 
-    const int rows            = 9;
-    const int cols            = 6;
+    const int rows            = 7; //9
+    const int cols            = 7; //6
     cv::Size chessboardSize = cv::Size(rows, cols);
 
+    // Real-time calibration
     CalibrateAndRectify cr(chessboardSize);
 
     //CalibrateAndRectify cr(path, numberImages, chessboardSize);
@@ -42,37 +45,69 @@ CalibrateAndRectify::
 CalibrateAndRectify( cv::Size chessboardSize )
 {
     FPS fps;
-    cv::VideoCapture capLeft(1); // open the Left camera 
-    cv::VideoCapture capRight(2); // open the Right camera
+    cv::VideoCapture capLeft(1); 
+    cv::VideoCapture capRight(2);
 
-    if(!capLeft.isOpened() || !capRight.isOpened())  // check if we succeeded
-    {
-        std::cerr << "ERROR: Could not open cameras." << std::endl;
-    }
+    assert(capLeft.isOpened() && capRight.isOpened());
 
     cv::namedWindow("Left",1);
     cv::namedWindow("Right",1);
 
     char k;
-    cv::Mat frameLeft;
-    cv::Mat frameRight;
+    cv::Mat frameLeft, frameRight;
 
-    while (true)
-    {   
-        bool isValid = true;
+    // 2D points in image plane
+    std::vector<std::vector<cv::Point2f>> imagePoints[2]; 
+    int numberCalibrated = 0;
+    bool valid = false;
 
+    // TODO Create an argument from it
+    //      or Can we get a number of images for calibration from imagePoints?
+    int numberImagesForCalibration = 2;
+
+    // retrive size of frame
+    // used to compute an error of rectification
+    capLeft >> frameLeft;
+    cv::Size frameSize = frameLeft.size();
+
+    // TODO Find a better way to create a timespan between capturing chessboards
+    //      for calibration.
+    int i = 0;
+    while (true) {   
         fps.before();
-        capLeft >> frameLeft; // get a new frame from left camera 
-        capRight >> frameRight; //get a new frame from right camera
+
+        capLeft >> frameLeft;
+        capRight >> frameRight;
+
+        if (i++ > 100) {
+            i = 0;
+            valid = FindStereoChessboardCorners( frameLeft, 
+                                                 frameRight, 
+                                                 chessboardSize, 
+                                                 imagePoints );
+
+            if (valid) {
+                valid = false;
+
+                std::cout << numberCalibrated << std::endl;
+
+                if (++numberCalibrated >= numberImagesForCalibration) {
+                    CalibrateStereoCamera( chessboardSize,
+                                           frameSize,
+                                           numberImagesForCalibration, 
+                                           imagePoints );
+
+                    // TODO better way of terminating app
+                    exit(1);
+                }
+            }
+        } 
+
         fps.after();
 
+        // adding info about FPS to image
         std::string text = "FPS: " + std::to_string((int)fps.getFps());
-        cv::putText( frameLeft, 
-                     text, 
-                     cv::Point(40,40),
-                     cv::FONT_HERSHEY_SIMPLEX,
-                     0.5,
-                     cv::Scalar(255,0,0) );
+        PutTextToImage(frameLeft, text);
 
         cv::imshow("Left", frameLeft);
         cv::imshow("Right", frameRight);
@@ -81,7 +116,6 @@ CalibrateAndRectify( cv::Size chessboardSize )
 
         if (k == 'q')
             break;
-
     }
 }
 
@@ -116,6 +150,18 @@ CalibrateAndRectify( std::string intrinsics,
     LoadIntrinsics();
     LoadExtrinsics();
     LoadDistortionCameraModels();
+}
+
+void CalibrateAndRectify::
+PutTextToImage( cv::Mat & image, 
+                std::string text )
+{
+    cv::putText( image, 
+                 text, 
+                 cv::Point(40,40),
+                 cv::FONT_HERSHEY_SIMPLEX,
+                 0.5,
+                 cv::Scalar(255,0,0) );
 }
 
 void CalibrateAndRectify::
@@ -238,7 +284,7 @@ FindStereoChessboardCorners( cv::Mat imageLeft,
                                             cornersRight, 
                                             flags );
 
-    // Compute corners more accurately
+    // compute corners more accurately
     if (foundLeft)
         cornerSubPix( imageLeft,
                       cornersLeft, 
@@ -259,13 +305,15 @@ FindStereoChessboardCorners( cv::Mat imageLeft,
     //drawChessboardCorners(imageLeftOriginal, boardSize, cornersLeft, foundLeft);
     //drawChessboardCorners(imageRightOriginal, boardSize, cornersRight, foundRight);
     
-    imagePoints[0].push_back(cornersLeft);
-    imagePoints[1].push_back(cornersRight);
+    if (foundLeft && foundRight) {
+        // store found corners only if it has been found at both of examined images
+        imagePoints[0].push_back(cornersLeft);
+        imagePoints[1].push_back(cornersRight);
 
-    // TODO necessary?
-    if (foundLeft && foundRight)
+
         return true;
-    else 
+    }
+    else
         return false;
 }
 
