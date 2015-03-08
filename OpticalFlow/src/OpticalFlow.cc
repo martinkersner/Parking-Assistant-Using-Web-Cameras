@@ -1,9 +1,19 @@
+/**
+ * Parking Assistant Using Web Cameras
+ * Martin Kersner's Master Thesis
+ *
+ * Optical Flow
+ *
+ * m.kersner@gmail.com
+ * 02/21/2015
+ */
+
 #include "OpticalFlow.h"
 
 int main() {
     cv::Mat first, second, 
             grayFirst, graySecond,
-            flow, groundTruth;
+            flow, groundTruth, mask;
 
     std::string firstPath, secondPath,
                 gtPath;
@@ -65,18 +75,30 @@ int main() {
             cv::cvtColor(first,  grayFirst,  cv::COLOR_BGR2GRAY);
             cv::cvtColor(second, graySecond, cv::COLOR_BGR2GRAY);
 
-
             groundTruth = cv::optflow::readOpticalFlow(gtPath);
 
             // TODO find better way
-            flow = CalculateFlow(grayFirst, graySecond);
-
+            /*
+            // DENSE FLOW
+            flow = CalculateDenseFlow(grayFirst, graySecond);
             std::cout << "AE" << std::setw(17) 
                       << MeanAngularError(flow, groundTruth) << std::endl;
             std::cout << "L1" << std::setw(17) 
                       << MeanL1EndpointError(flow, groundTruth) << std::endl;
             std::cout << "L2" << std::setw(17) 
                       << MeanL2EndpointError(flow, groundTruth) << std::endl << std::endl;
+            */
+
+            ///*
+            // SPARSE FLOW
+            CalculateSparseFlow(grayFirst, graySecond, flow, mask);
+            std::cout << "AE" << std::setw(17) 
+                      << SparseAngularError(flow, groundTruth, mask) << std::endl;
+            std::cout << "L1" << std::setw(17) 
+                      << SparseL1EndpointError(flow, groundTruth, mask) << std::endl;
+            std::cout << "L2" << std::setw(17) 
+                      << SparseL2EndpointError(flow, groundTruth, mask) << std::endl << std::endl;
+            //*/
 
             /*
             // for drawing purposes, white canvas
@@ -177,23 +199,40 @@ cv::Mat DrawOpticalFlowColor( const cv::Mat & flow )
 cv::Mat AngularError( cv::Mat & flow,
                       cv::Mat & groundTruth )
 {
-    cv::Mat_<float> angErr = cv::Mat_<float>(flow.rows, flow.cols);
-    cv::Point p1, p2;
+    cv::Mat_<float> angErr = cv::Mat_<float>::zeros(flow.rows, flow.cols);
+    cv::Point2f p1, p2;
     float tmp;
 
     for (int i = 0; i < flow.rows; ++i) {
         for (int j = 0; j < flow.cols; ++j) {
 
-            p1 = flow.at<cv::Point>(i,j);
-            p2 = groundTruth.at<cv::Point>(i,j);
+            p1 = flow.at<cv::Point2f>(i,j);
+            p2 = groundTruth.at<cv::Point2f>(i,j);
             tmp = MultVec3x1(p1, p2) / (MagVec3x1(p1) * MagVec3x1(p2));
             
-            angErr.at<float>(i,j) = acos (tmp);
+            angErr.at<float>(i,j) = acos(tmp);
         }
     }
 
     return angErr;
 }
+
+float SparseAngularError( const cv::Mat & flow,
+                          const cv::Mat & groundTruth,
+                          const cv::Mat & mask )
+{
+    cv::Mat maskedGroundTruth;
+    cv::Mat maskedFlow;
+    int number = cv::sum(mask)[0];
+
+    groundTruth.copyTo(maskedGroundTruth, mask);
+    flow.copyTo(maskedFlow, mask);
+
+    cv::Mat ae = AngularError(maskedFlow, maskedGroundTruth);
+
+    return float(cv::sum(ae)[0])/number;
+}
+
 
 float MeanAngularError( cv::Mat & flow,
                         cv::Mat & groundTruth )
@@ -205,7 +244,8 @@ cv::Mat L1EndpointError( cv::Mat & flow,
                          cv::Mat & groundTruth )
 {
     cv::Mat_<double> endErr = cv::Mat_<double>(flow.rows, flow.cols);
-    cv::Point_<double> p1, p2;
+    //cv::Point_<double> p1, p2;
+    cv::Point2f p1, p2;
     double tmp,
            tmpX, tmpY,
            px1, px2,
@@ -214,9 +254,9 @@ cv::Mat L1EndpointError( cv::Mat & flow,
     for (int i = 0; i < flow.rows; ++i) {
         for (int j = 0; j < flow.cols; ++j) {
 
-            p1 = flow.at<cv::Point>(i,j);
-            p2 = groundTruth.at<cv::Point>(i,j);
-
+            p1 = flow.at<cv::Point2f>(i,j);
+            p2 = groundTruth.at<cv::Point2f>(i,j);
+            
             px1 = p1.x;
             px2 = p2.x;
 
@@ -227,11 +267,30 @@ cv::Mat L1EndpointError( cv::Mat & flow,
             tmpY = std::abs(py1-py2);
             tmp = tmpX + tmpY;
             
-            endErr.at<double>(i,j) = tmp;
+            if (p2.x < OCCLUDED || p2.y < OCCLUDED)
+                endErr.at<double>(i,j) = tmp;
+            else
+                endErr.at<double>(i,j) = 0;
         }
     }
 
     return endErr;
+}
+
+float SparseL1EndpointError( const cv::Mat & flow,
+                             const cv::Mat & groundTruth, 
+                             const cv::Mat & mask )
+{
+    cv::Mat maskedGroundTruth;
+    cv::Mat maskedFlow;
+    int number = cv::sum(mask)[0];
+
+    groundTruth.copyTo(maskedGroundTruth, mask);
+    flow.copyTo(maskedFlow, mask);
+
+    cv::Mat ae = L1EndpointError(maskedFlow, maskedGroundTruth);
+
+    return float(cv::sum(ae)[0])/number;
 }
 
 float MeanL1EndpointError( cv::Mat & flow,
@@ -252,8 +311,8 @@ cv::Mat L2EndpointError( cv::Mat & flow,
     for (int i = 0; i < flow.rows; ++i) {
         for (int j = 0; j < flow.cols; ++j) {
 
-            p1 = flow.at<cv::Point>(i,j);
-            p2 = groundTruth.at<cv::Point>(i,j);
+            p1 = flow.at<cv::Point2f>(i,j);
+            p2 = groundTruth.at<cv::Point2f>(i,j);
 
             tmpX = abs(p1.x-p2.x);
             tmpXX = tmpX*tmpX;
@@ -263,11 +322,30 @@ cv::Mat L2EndpointError( cv::Mat & flow,
 
             tmp = tmpXX + tmpYY;
             
-            endErr.at<double>(i,j) = sqrt(tmp);
+            if (p2.x < OCCLUDED || p2.y < OCCLUDED)
+                endErr.at<double>(i,j) = sqrt(tmp);
+            else
+                endErr.at<double>(i,j) = 0;
         }
     }
 
     return endErr;
+}
+
+float SparseL2EndpointError( const cv::Mat & flow,
+                             const cv::Mat & groundTruth, 
+                             const cv::Mat & mask )
+{
+    cv::Mat maskedGroundTruth;
+    cv::Mat maskedFlow;
+    int number = cv::sum(mask)[0];
+
+    groundTruth.copyTo(maskedGroundTruth, mask);
+    flow.copyTo(maskedFlow, mask);
+
+    cv::Mat ae = L2EndpointError(maskedFlow, maskedGroundTruth);
+
+    return float(cv::sum(ae)[0])/number;
 }
 
 float MeanL2EndpointError( cv::Mat & flow,
@@ -300,8 +378,96 @@ double MagVec3x1( cv::Point p )
     return sqrt(px*px + py*py + 1.0);
 }
 
-cv::Mat CalculateFlow( const cv::Mat & first,
-                       const cv::Mat & second )
+void CalculateSparseFlow ( const cv::Mat & first,
+                           const cv::Mat & second,
+                           cv::Mat & flow,
+                           cv::Mat & mask )
+{
+    cv::Size size = first.size();
+
+    std::vector<cv::Point2f> featuresLeft;
+    std::vector<cv::Point2f> featuresRight;
+
+    // FEATURE DETECTION
+    goodFeaturesToTrack( first, featuresLeft, 
+                         5000, // maxCorners
+                         0.01, // qualityLevel
+                         3 );  // minDistance, 
+                         //InputArray mask=noArray(), 
+                         //int blockSize=3, 
+                         //bool useHarrisDetector=false, 
+                         //double k=0.04 );
+
+    // OPTICAL FLOW
+    std::vector<uchar> status;
+    cv::Mat err;
+    int winSize = 40;
+
+    calcOpticalFlowPyrLK( first, second, 
+                          featuresLeft, featuresRight, 
+                          status, err, 
+                          cv::Size(winSize, winSize), 
+                          3,      // max level
+                          cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 
+                                            30, 0.01), 
+                          0,      // flags 
+                          1e-4 ); // minEigThreshold
+
+    SparseFlowToMat( featuresLeft, featuresRight, status,
+                     size,
+                     flow, mask );
+}
+
+inline bool CorrectFlowEstimation( uchar fe )
+{
+    if (fe == CORRECT_FLOW_ESTIMATION)
+        return true;
+    else
+        return false;
+}
+
+inline void CalculateParticularFlow( const cv::Point2f & firstFeature,
+                                     const cv::Point2f & secondFeature,
+                                     cv::Point2f & flow )
+{
+    flow.x = secondFeature.x - firstFeature.x;
+    flow.y = secondFeature.y - firstFeature.y;
+}
+
+void SparseFlowToMat( const std::vector<cv::Point2f> & firstFeatures,
+                      const std::vector<cv::Point2f> & secondFeatures,
+                      const std::vector<uchar> & status,
+                      cv::Size & size,
+                      cv::Mat & flow,
+                      cv::Mat & mask )
+{
+    int x, y;
+    cv::Point2f pixelFlow;
+    cv::Mat tmpFlow = cv::Mat::zeros(size, CV_32FC2);
+    cv::Mat tmpMask = cv::Mat::zeros(size, CV_8UC1);
+
+    for (int i = 0; i < status.size(); ++i) {
+        if (CorrectFlowEstimation(status.at(i))) {// && err.at<float>(y,x) < 100) {
+            x = secondFeatures.at(i).x;
+            y = secondFeatures.at(i).y;
+
+            // mask
+            tmpMask.at<uchar>(y, x) = 1;
+
+            // flow
+            CalculateParticularFlow(firstFeatures.at(i), secondFeatures.at(i), pixelFlow);
+            
+            tmpFlow.at<cv::Vec2f>(y, x)[0] = pixelFlow.x;
+            tmpFlow.at<cv::Vec2f>(y, x)[1] = pixelFlow.y;
+        }
+    }
+
+    flow = tmpFlow; 
+    mask = tmpMask;
+}
+
+cv::Mat CalculateDenseFlow( const cv::Mat & first,
+                            const cv::Mat & second )
 {
     cv::Mat flow;
 
