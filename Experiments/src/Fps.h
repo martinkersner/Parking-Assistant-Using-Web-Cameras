@@ -10,10 +10,9 @@
  * Inspired by http://stackoverflow.com/users/1662574/zaw-lin
  */
 
-#include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 
 class FPS {
-
     double avgdur   = 0;
     double fpsstart = 0;
     double avgfps   = 0;
