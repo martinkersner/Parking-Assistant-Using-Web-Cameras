@@ -28,6 +28,8 @@ According to specification of the newest Subaru stereo system called 2015 Subaru
 In this thesis we aim to create a simple parking assistant using more web cameras that enable to detect a stationary object in a colliding distance, detect an edge of a potentially dangerous object, such as pavement, and classify an object as a human being or other object.
 
 
-[1] http://www.cnet.com/news/u-s-requiring-back-up-cameras-in-cars-by-2018 
-[2] http://www.subaru.com/engineering/eyesight.html
+[1] http://www.cnet.com/news/u-s-requiring-back-up-cameras-in-cars-by-2018    
+
+[2] http://www.subaru.com/engineering/eyesight.html    
+
 [3] http://www.planetsubaru.com/2015-subaru-eyesight-capability-revealed.htm
