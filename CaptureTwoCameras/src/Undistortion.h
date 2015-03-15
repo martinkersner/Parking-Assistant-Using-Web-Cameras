@@ -7,11 +7,7 @@ class Undistortion {
             rmap10,
             rmap11;
 
-    void LoadDistortion( std::string fileName,
-                         cv::Mat & rmap00,
-                         cv::Mat & rmap01,
-                         cv::Mat & rmap10,
-                         cv::Mat & rmap11 );
+    void LoadDistortion( std::string fileName );
 
     public:
         Undistortion( std::string fileName );

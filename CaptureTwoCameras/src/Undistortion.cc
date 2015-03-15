@@ -11,23 +11,18 @@
 #include "Undistortion.h"
 
 Undistortion::Undistortion( std::string fileName ) {
-    LoadDistortion( fileName, 
-                    this->rmap00, this->rmap01, this->rmap10, this->rmap11 );
+    LoadDistortion( fileName );
 }
 
-void Undistortion::LoadDistortion( std::string fileName,
-                                   cv::Mat & rmap00,
-                                   cv::Mat & rmap01,
-                                   cv::Mat & rmap10,
-                                   cv::Mat & rmap11 )
+void Undistortion::LoadDistortion( std::string fileName )
 {
     cv::FileStorage fs(fileName, cv::FileStorage::READ);
 
     if (fs.isOpened()) {
-        fs["MX1"] >> rmap00;
-        fs["MY1"] >> rmap01;
-        fs["MX2"] >> rmap10;
-        fs["MY2"] >> rmap11;
+        fs["MX1"] >> this->rmap00;
+        fs["MY1"] >> this->rmap01;
+        fs["MX2"] >> this->rmap10;
+        fs["MY2"] >> this->rmap11;
 
         fs.release();
     }
