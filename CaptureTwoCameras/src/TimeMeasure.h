@@ -1,3 +1,6 @@
+#ifndef TIMEMEASURE_H_
+#define TIMEMEASURE_H_
+
 #include <chrono>
 #include <vector>
 
@@ -18,3 +21,5 @@ class TimeMeasure {
         void Stop();
         double Duration();
 };
+
+#endif // TIMEMEASURE_H_
