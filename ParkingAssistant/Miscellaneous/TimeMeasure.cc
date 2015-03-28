@@ -2,7 +2,7 @@
  * Parking Assistant Using Web Cameras
  * Martin Kersner's Master Thesis
  *
- * Measures a time of code execution.
+ * Measures time of code execution.
  *
  * m.kersner@gmail.com
  * 03/07/2015

@@ -2,27 +2,26 @@
  * Parking Assistant Using Web Cameras
  * Martin Kersner's Master Thesis
  *
- * Computing FPS.
+ * Designed for measuring frames per second.
+ * Inspired by http://stackoverflow.com/users/1662574/zaw-lin
  *
  * Snippet usage ***************************************************************
- * FPS fps;
+ * Fps fps;
  * cv::Mat frame;
  * cv::VideoCapture cap(0);
  *
  * while (true)
  * {
  *     cap >> frame;
- *     fps.before();
+ *     fps.Before();
  *     process(frame);
- *     fps.after();
- *     std::cout << "fps: " << fps.getFps() << std::endl;
+ *     fps.After();
+ *     std::cout << "Fps: " << fps.GetFps() << std::endl;
  * }
- ** ****************************************************************************
+ *******************************************************************************
  *
  * m.kersner@gmail.com
  * 01/25/2015
- *
- * Inspired by http://stackoverflow.com/users/1662574/zaw-lin
  */
 
 #include "Fps.h"
@@ -30,38 +29,40 @@
 /**
  * Measuring before frame processing.
  */
-void FPS::before()
+void Fps::Before()
 {
-    this->start = clock();
+    this->start = Clock();
 }
 
 /**
  * Measuring after frame processing.
  */
-void FPS::after()
+void Fps::After()
 {
-    this->dur = clock()-this->start;
+    this->dur = Clock() - this->start;
 }
 
-double FPS::clock()
+double Fps::Clock()
 {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC,  &t);
-    return (t.tv_sec * 1000)+(t.tv_nsec*1e-6);
+    return (t.tv_sec * 1000) + (t.tv_nsec*1e-6);
 }
 
-double FPS::avgFps()
+double Fps::AvgFps()
 {
-    if(clock()-this->fpsstart > 1000) {
-        this->fpsstart=clock();
-        this->avgfps=0.7*this->avgfps+0.3*this->fps1sec;
-        this->fps1sec=0;
+    if (Clock()-this->fpsStart > 1000) {
+        this->fpsStart = Clock();
+        this->avgFps = 0.7*this->avgFps + 0.3*this->fps1sec;
+        this->fps1sec = 0;
     }
+
     this->fps1sec++;
-    return this->avgfps;
+
+    return this->avgFps;
 }
 
-double FPS::getFps()
+double Fps::GetFps()
 {
-    return avgFps();
+    return AvgFps();
 }
