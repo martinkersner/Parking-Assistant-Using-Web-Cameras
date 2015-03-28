@@ -1,5 +1,5 @@
-#ifndef TRIANGULATION_H_
-#define TRIANGULATION_H_
+#ifndef COLLISIONAVOIDANCESYSTEM_TRIANGULATION_H_
+#define COLLISIONAVOIDANCESYSTEM_TRIANGULATION_H_
 
 #include <string>
 #include <opencv2/opencv.hpp>
@@ -17,4 +17,4 @@ class Triangulation {
         cv::Mat DisparityToDepth2( cv::Mat & disparity );
 };
 
-#endif // TRIANGULATION_H_
+#endif // COLLISIONAVOIDANCESYSTEM_TRIANGULATION_H_

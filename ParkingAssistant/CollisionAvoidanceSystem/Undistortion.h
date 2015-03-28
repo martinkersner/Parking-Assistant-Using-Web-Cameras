@@ -1,5 +1,5 @@
-#ifndef UNDISTORTION_H_
-#define UNDISTORTION_H_
+#ifndef COLLISIONAVOIDANCESYSTEM_UNDISTORTION_H_
+#define COLLISIONAVOIDANCESYSTEM_UNDISTORTION_H_
 
 #include <string>
 #include <opencv2/opencv.hpp>
@@ -18,4 +18,4 @@ class Undistortion {
         cv::Mat CorrectRightImage( cv::Mat & rightImage );
 };
 
-#endif // UNDISTORTION_H_
+#endif // COLLISIONAVOIDANCESYSTEM_UNDISTORTION_H_

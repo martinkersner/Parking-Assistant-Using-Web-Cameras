@@ -1,5 +1,5 @@
-#ifndef DISPARITYMAP_H_
-#define DISPARITYMAP_H_
+#ifndef COLLISIONAVOIDANCESYSTEM_DISPARITYMAP_H_
+#define COLLISIONAVOIDANCESYSTEM_DISPARITYMAP_H_
 
 #include <opencv2/opencv.hpp>
 
@@ -23,4 +23,4 @@ class DisparityMap {
                                     cv::Mat & right );
 };
 
-#endif // DISPARITYMAP_H_
+#endif // COLLISIONAVOIDANCESYSTEM_DISPARITYMAP_H_

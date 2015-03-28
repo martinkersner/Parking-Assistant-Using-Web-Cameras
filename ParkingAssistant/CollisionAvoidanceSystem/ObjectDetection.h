@@ -1,5 +1,5 @@
-#ifndef OBJECTDETECTION_H_
-#define OBJECTDETECTION_H__
+#ifndef COLLISIONAVOIDANCESYSTEM_OBJECTDETECTION_H_
+#define COLLISIONAVOIDANCESYSTEM_OBJECTDETECTION_H_
 
 #include <opencv2/opencv.hpp>
 
@@ -71,4 +71,4 @@ class ObjectDetection {
         Object Detect( cv::Mat & scene );
 };
 
-#endif // OBJECTDETECTION_H__
+#endif // COLLISIONAVOIDANCESYSTEM_OBJECTDETECTION_H_

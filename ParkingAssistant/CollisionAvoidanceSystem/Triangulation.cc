@@ -1,3 +1,13 @@
+/**
+ * Parking Assistant Using Web Cameras
+ * Martin Kersner's Master Thesis
+ *
+ * Triangulation of disparity map.
+ *
+ * m.kersner@gmail.com
+ * 03/28/2015
+ */
+
 #include "Triangulation.h"
 
 Triangulation::Triangulation( std::string fileName )

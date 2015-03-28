@@ -13,8 +13,7 @@
 #include "ObjectDetection.h"
 
 ObjectDetection::ObjectDetection( cv::Mat & _background ) : background(_background)
-{
-}
+{}
 
 Object ObjectDetection::Detect( cv::Mat & scene )
 {
