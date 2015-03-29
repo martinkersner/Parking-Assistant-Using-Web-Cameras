@@ -12,21 +12,24 @@
 
 #include "ObjectDetection.h"
 
+// this constructor is created only in order to posses class without initialization
+ObjectDetection::ObjectDetection()
+{}
+
 ObjectDetection::ObjectDetection( cv::Mat & _background ) : background(_background)
 {}
 
-Object ObjectDetection::Detect( cv::Mat & scene )
+DisparityObject ObjectDetection::Detect( cv::Mat & scene )
 {
-    Object object;
+    DisparityObject object;
     cv::Mat mask = ((scene - this->background) > this->threshold) / 255.0;
+
 
     cv::Mat obstacles = mask.mul(scene);
     cv::Mat hist = ComputeHistogram(obstacles);
     cv::Mat modHist = ModifyHistogram(hist);
 
-    cv::imshow("scene", scene);
-
-    int distance = ClosestObject2(modHist, obstacles);
+    object = ClosestObject(modHist, obstacles);
 
     return object;
 }
@@ -44,9 +47,6 @@ cv::Mat ObjectDetection::ComputeHistogram( cv::Mat & src )
 
 
     hist = HistogramPostprocessing(hist);
-
-    // TODO delete
-    //DisplayHistogram(hist);
 
     return hist;
 }
@@ -121,40 +121,41 @@ int ObjectDetection::AreaOfObject( cv::Mat & hist,
     return area;
 }
 
-int ObjectDetection::ClosestObject( cv::Mat & hist,
-                                    int distance,
-                                    cv::Mat & img ) // only for debug
+//int ObjectDetection::ClosestObject2( cv::Mat & hist,
+//                                    int distance,
+//                                    cv::Mat & img ) // only for debug
+//{
+//    double min, max;
+//    int minIdx, maxIdx;
+//    int lower, upper;
+//    int area;
+//    int d;
+//
+//    cv::minMaxIdx(hist, &min, &max, &minIdx, &maxIdx);
+//    BinId2BinRange(maxIdx, lower, upper);
+//
+//    // TODO delete
+//    std::cout << BinId2Intensity(lower) << " " << BinId2Intensity(upper) << std::endl;
+//
+//    area = AreaOfObject(hist, lower, upper);
+//    DisplayObject(img, BinId2Intensity(lower), BinId2Intensity(upper));
+//
+//    if (area < this->minArea)
+//        return distance;
+//    else {
+//        d = ObjectDistance(hist, lower, upper);
+//        ClearHistogram(hist, upper);
+//        return ClosestObject2(hist, d, img);
+//    }
+//
+//}
+
+DisparityObject ObjectDetection::ClosestObject ( cv::Mat & hist,
+                                                 cv::Mat & obstacles ) // debugging purposes
 {
-    double min, max;
-    int minIdx, maxIdx;
-    int lower, upper;
-    int area;
-    int d;
-
-    cv::minMaxIdx(hist, &min, &max, &minIdx, &maxIdx);
-    BinId2BinRange(maxIdx, lower, upper);
-
-    // TODO delete
-    std::cout << BinId2Intensity(lower) << " " << BinId2Intensity(upper) << std::endl;
-
-    area = AreaOfObject(hist, lower, upper);
-    DisplayObject(img, BinId2Intensity(lower), BinId2Intensity(upper));
-
-    if (area < this->minArea)
-        return distance;
-    else {
-        d = ObjectDistance(hist, lower, upper);
-        ClearHistogram(hist, upper);
-        return ClosestObject(hist, d, img);
-    }
-
-}
-
-int ObjectDetection::ClosestObject2 ( cv::Mat & hist,
-                                      cv::Mat & img ) // debugging purposes
-{
-    int distance;
+    //int distance;
     int upperBin, lowerBin;
+    DisparityObject dispObj;
 
     // searching for upper boundary
     int i;
@@ -165,6 +166,11 @@ int ObjectDetection::ClosestObject2 ( cv::Mat & hist,
         }
     }
 
+    // TODO refine
+    // not found
+    if (i == 0)
+        return dispObj;
+
     // searching for lower boundary
     for (int j = i; j >= 0; --j) {
         if (hist.at<unsigned short>(j) <= 0) {
@@ -173,12 +179,17 @@ int ObjectDetection::ClosestObject2 ( cv::Mat & hist,
         }
     }
 
-    std::cout << lowerBin << " " << upperBin << std::endl;
-    std::cout << BinId2Intensity(lowerBin) << " " << BinId2Intensity(upperBin) << std::endl;
-    DisplayObject(img, BinId2Intensity(lowerBin), BinId2Intensity(upperBin));
+    // TODO area control
 
-    // TODO compute distance
-    return distance;
+    // TODO delete
+    //std::cout << lowerBin << " " << upperBin << std::endl;
+    //DisplayObject(img, BinId2Intensity(lowerBin), BinId2Intensity(upperBin));
+
+    dispObj.found = true;
+    dispObj.mask = GetObject( obstacles, 
+                              BinId2Intensity(lowerBin), BinId2Intensity(upperBin) );
+
+    return dispObj;
 }
 
 float ObjectDetection::ObjectDistance( cv::Mat & hist,
@@ -199,10 +210,11 @@ float ObjectDetection::ObjectDistance( cv::Mat & hist,
 }
 
 // AUXILIARY METHODS ///////////////////////////////////////////////////////////
-void ObjectDetection::DisplayObject( cv::Mat & src, 
-                                     float lower,
-                                     float upper )
+cv::Mat ObjectDetection::GetObject( cv::Mat & src, 
+                                 float lower,
+                                 float upper )
 {
+    cv::Mat maskObject;
     cv::Mat maskLower = (src > lower) / 255.0;
     cv::Mat maskUpper = (src < upper) / 255.0;
 
@@ -210,9 +222,9 @@ void ObjectDetection::DisplayObject( cv::Mat & src,
     cv::Mat object = src.mul(mask);
 
     cv::erode(object, object, cv::Mat(), cv::Point(-1, -1), 4, 1, 1);
+    maskObject = (object > 0) / 255.0;
 
-    cv::imshow("Object", object);
-    cv::waitKey();
+    return maskObject;
 }
 
 void ObjectDetection::DisplayHistogram ( cv::Mat & hist )

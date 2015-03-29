@@ -10,6 +10,10 @@
 
 #include "Triangulation.h"
 
+// this constructor is created only in order to posses class without initialization
+Triangulation::Triangulation()
+{}
+
 Triangulation::Triangulation( std::string fileName )
 {
     LoadExtrinsics(fileName);

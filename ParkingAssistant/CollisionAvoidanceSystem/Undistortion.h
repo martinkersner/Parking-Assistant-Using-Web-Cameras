@@ -13,6 +13,7 @@ class Undistortion {
     void LoadDistortion( std::string fileName );
 
     public:
+        Undistortion( );
         Undistortion( std::string fileName );
         cv::Mat CorrectLeftImage( cv::Mat & leftImage );
         cv::Mat CorrectRightImage( cv::Mat & rightImage );

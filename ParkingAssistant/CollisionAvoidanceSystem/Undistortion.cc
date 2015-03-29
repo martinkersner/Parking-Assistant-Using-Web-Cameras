@@ -10,7 +10,12 @@
 
 #include "Undistortion.h"
 
-Undistortion::Undistortion( std::string fileName ) {
+// this constructor is created only in order to posses class without initialization
+Undistortion::Undistortion() 
+{}
+
+Undistortion::Undistortion( std::string fileName ) 
+{
     LoadDistortion( fileName );
 }
 

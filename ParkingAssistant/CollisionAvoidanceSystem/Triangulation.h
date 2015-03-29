@@ -12,6 +12,7 @@ class Triangulation {
     void PrepareProjectionMatrix();
 
     public:
+        Triangulation();
         Triangulation( std::string fileName );
         cv::Mat DisparityToDepth( cv::Mat & disparity );
         cv::Mat DisparityToDepth2( cv::Mat & disparity );

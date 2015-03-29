@@ -81,8 +81,14 @@ cv::Mat DisparityMap::CalculateDisparity( cv::Mat & left,
             left_8UC1, right_8UC1;
 
     // channels reduction
-    cvtColor(left, left_8UC1, CV_BGR2GRAY);
-    cvtColor(right, right_8UC1, CV_BGR2GRAY);
+    if (left.channels() > 1) {
+        cvtColor(left, left_8UC1, CV_BGR2GRAY);
+        cvtColor(right, right_8UC1, CV_BGR2GRAY);
+    }
+    else {
+        left_8UC1  = left;
+        right_8UC1 = right;
+    }
 
     // calculation disparity 
     this->sbm(left_8UC1, right_8UC1, disparity);
