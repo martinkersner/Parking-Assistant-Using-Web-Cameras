@@ -20,7 +20,9 @@ class CollisionAvoidanceSystem {
     public:
         CollisionAvoidanceSystem( std::string _extrinsics,
                                   std::string _distortions,
-                                 cv::Mat _background );
+                                  cv::Mat _background );
+
+        void Initialize();
 
         Object Detect( cv::Mat & left,
                        cv::Mat & right );

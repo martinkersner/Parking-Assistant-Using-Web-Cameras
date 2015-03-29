@@ -21,6 +21,11 @@ CollisionAvoidanceSystem::CollisionAvoidanceSystem( std::string _extrinsics,
       distortions(_distortions),
       background(_background)
 {
+    Initialize();
+}
+
+void CollisionAvoidanceSystem::Initialize()  
+{
     this->undistortion = Undistortion(this->distortions);
 
     // disparity calculation settings
