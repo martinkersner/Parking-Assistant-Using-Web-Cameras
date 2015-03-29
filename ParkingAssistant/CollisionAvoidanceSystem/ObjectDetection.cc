@@ -19,9 +19,9 @@ ObjectDetection::ObjectDetection()
 ObjectDetection::ObjectDetection( cv::Mat & _background ) : background(_background)
 {}
 
-DisparityObject ObjectDetection::Detect( cv::Mat & scene )
+Object ObjectDetection::Detect( cv::Mat & scene )
 {
-    DisparityObject object;
+    Object object;
     cv::Mat mask = ((scene - this->background) > this->threshold) / 255.0;
 
 
@@ -150,12 +150,12 @@ int ObjectDetection::AreaOfObject( cv::Mat & hist,
 //
 //}
 
-DisparityObject ObjectDetection::ClosestObject ( cv::Mat & hist,
+Object ObjectDetection::ClosestObject ( cv::Mat & hist,
                                                  cv::Mat & obstacles ) // debugging purposes
 {
     //int distance;
     int upperBin, lowerBin;
-    DisparityObject dispObj;
+    Object object;
 
     // searching for upper boundary
     int i;
@@ -169,7 +169,7 @@ DisparityObject ObjectDetection::ClosestObject ( cv::Mat & hist,
     // TODO refine
     // not found
     if (i == 0)
-        return dispObj;
+        return object;
 
     // searching for lower boundary
     for (int j = i; j >= 0; --j) {
@@ -185,11 +185,11 @@ DisparityObject ObjectDetection::ClosestObject ( cv::Mat & hist,
     //std::cout << lowerBin << " " << upperBin << std::endl;
     //DisplayObject(img, BinId2Intensity(lowerBin), BinId2Intensity(upperBin));
 
-    dispObj.found = true;
-    dispObj.mask = GetObject( obstacles, 
+    object.found = true;
+    object.mask = GetObject( obstacles, 
                               BinId2Intensity(lowerBin), BinId2Intensity(upperBin) );
 
-    return dispObj;
+    return object;
 }
 
 float ObjectDetection::ObjectDistance( cv::Mat & hist,

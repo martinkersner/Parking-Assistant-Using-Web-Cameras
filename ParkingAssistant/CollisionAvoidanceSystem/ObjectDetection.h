@@ -3,9 +3,10 @@
 
 #include <opencv2/opencv.hpp>
 
-struct DisparityObject {
+struct Object {
     bool found = false;
     cv::Mat mask;
+    int distance = 0;
 };
 
 class ObjectDetection {
@@ -39,8 +40,8 @@ class ObjectDetection {
     //                   int distance,
     //                   cv::Mat & img ); // only for debug
 
-    DisparityObject ClosestObject ( cv::Mat & hist,
-                                    cv::Mat & img );
+    Object ClosestObject ( cv::Mat & hist,
+                           cv::Mat & img );
 
     int BinId2Intensity( int binId );
 
@@ -71,7 +72,7 @@ class ObjectDetection {
     public:
         ObjectDetection();
         ObjectDetection( cv::Mat & _background );
-        DisparityObject Detect( cv::Mat & scene );
+        Object Detect( cv::Mat & scene );
 };
 
 #endif // COLLISIONAVOIDANCESYSTEM_OBJECTDETECTION_H_
