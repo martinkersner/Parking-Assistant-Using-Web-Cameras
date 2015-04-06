@@ -1,26 +1,27 @@
-/**
- * Parking Assistant Using Web Cameras
- * Martin Kersner's Master Thesis
- *
- * Stereo Calibrating of Horizontally aligned camera
- *
- * m.kersner@gmail.com
- * 01/25/2015
- */
+#ifndef CALIBRATION_CALIBRATION_H_
+#define CALIBRATION_CALIBRATION_H_
 
-#include <cstdlib>
-#include <iostream>
 #include <string>
 #include <vector>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/opencv.hpp>
 
-typedef std::vector<std::string> StringPair; // left image, right image
+class Calibration {
 
-class CalibrateAndRectify {
+    // calibration properties
+    cv::Size chessboardSize;
+    int numberImagesForCalibration;
+    std::string chessboardPath;
+    cv::Size frameSize;
+    int numberCalibrated = 0;
+
+    // 2D points in image plane
+    std::vector<std::vector<cv::Point2f>> imagePoints[2]; 
+
+    // calibration output files
+    std::string intrinsicsFile;
+    std::string extrinsicsFile;
+    std::string distortionFile;
 
     // camera intrinsic properties
     cv::Mat cameraMatrix[2];
@@ -33,89 +34,36 @@ class CalibrateAndRectify {
     // parameters for undistortion and rectification
     cv::Mat rmap[2][2];
 
-    // TODO reimplement!
-    //std::vector<std::string > GetFileNames(std::string & path);
-    std::vector<StringPair> 
-    GetFileNames( std::string & path,
-                  int numberImages );
+    std::vector<std::vector<cv::Point3f>> PrepareObjectPoints();
 
-    void 
-    StereoCalibrate( StringPair & sp,
-                     cv::Size chessboardSize,
-                     std::vector<std::vector<cv::Point2f>> * imagePoints );
+    void SaveIntrinsics();
 
-    cv::Size 
-    GetImageSize( std::vector<StringPair> & vecStringPairs );
+    void SaveExtrinsics();
 
-    double 
-    ComputePartlyError( std::vector<std::vector<cv::Point2f>> * imagePoints, 
-                        std::vector<cv::Vec3f> * lines, 
-                        int npt,
-                        int i );
+    void SaveDistortionCameraModels();
 
-    std::vector<std::vector<cv::Point3f>>
-    PrepareObjectPoints( int numberImages,
-                         cv::Size chessboardSize );
+    bool FindStereoChessboardCorners( cv::Mat imageLeft, 
+                                      cv::Mat imageRight );
 
-    void 
-    SaveIntrinsics();
+    void CalibrateStereoCamera();
 
-    void
-    SaveExtrinsics();
+    void SaveImages( cv::Mat leftImage,
+                     cv::Mat rightImage );
 
-    void 
-    SaveDistortionCameraModels();
-
-    bool 
-    FindStereoChessboardCorners( cv::Mat imageLeft, 
-                                 cv::Mat imageRight, 
-                                 cv::Size chessboardSize,
-                                 std::vector<std::vector<cv::Point2f>> * imagePoints );
-
-    void 
-    CalibrateStereoCamera( cv::Size chessboardSize, 
-                           cv::Size imageSize,
-                           int numberImages,
-                           std::vector<std::vector<cv::Point2f>> * imagePoints );
-
-    void
-    LoadIntrinsics();
-
-    void
-    LoadExtrinsics();
-
-    void 
-    LoadDistortionCameraModels();
-
-    void
-    PutTextToImage( cv::Mat & image, 
-                    std::string text );
+    void ClearImagePoints();
 
     public:
-        // Real-time calibrating
-        CalibrateAndRectify(cv::Size chessboardSize);
+        Calibration( int rows,
+                     int cols,
+                     int _numberImagesForCalibration,
+                     std::string _chessboardPath,
+                     cv::Size _frameSize,
+                     std::string _intrinsicsFile,
+                     std::string _extrinsicsFile,
+                     std::string _distortionFile );
 
-        // Calibration utility
-        // compute intrinsic and extrinsic camera parameters
-        // TODO reimplement
-        //      find out number of images from given directory containing images
-        //CalibrateAndRectifye(std::string pathToImages);
-        CalibrateAndRectify( std::string pathToImages, 
-                             int numberImages, 
-                             cv::Size chessboardSize );
-
-        // Rectification utility
-        // load given intrinsic and extrinsic parameters
-        CalibrateAndRectify( std::string intrinsics, 
-                             std::string extrinsics );
-        
-        cv::Mat
-        RemapLeftImage( cv::Mat leftImage );
-
-        cv::Mat
-        RemapRightImage( cv::Mat RightImage );
-
-        cv::Mat
-        DrawComparingLines( cv::Mat leftImage, 
-                            cv::Mat rightImage );
+        int Calibrate( cv::Mat & left,
+                       cv::Mat & right );
 };
+
+#endif // CALIBRATION_CALIBRATION_H_
