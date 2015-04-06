@@ -11,13 +11,25 @@
 #include "ImageAcquisition.h"
 
 ImageAcquisition::ImageAcquisition ( int _indexLeft, 
-                                     int _indexRight ) 
+                                     int _indexRight,
+                                     int _imageWidth,
+                                     int _imageHeight,
+                                     int _fps ) 
     : indexLeft(_indexLeft),                                                             
-      indexRight(_indexRight)
+      indexRight(_indexRight),
+      imageWidth(_imageWidth),
+      imageHeight(_imageHeight),
+      fps(_fps)
 
 {
     this->capLeft = OpenCamera(this->indexLeft);
     this->capRight= OpenCamera(this->indexRight);
+}
+
+ImageAcquisition::~ImageAcquisition()
+{
+    this->capLeft.release();
+    this->capRight.release();
 }
 
 int ImageAcquisition::VerifyConnection()
@@ -33,16 +45,16 @@ int ImageAcquisition::VerifyConnection()
 cv::VideoCapture ImageAcquisition::OpenCamera( int index )
 {
     cv::VideoCapture cap(index); 
-    cap.set(CV_CAP_PROP_FRAME_WIDTH,  640);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+    cap.set(CV_CAP_PROP_FRAME_WIDTH,  this->imageWidth);
+    cap.set(CV_CAP_PROP_FRAME_HEIGHT, this->imageHeight);
 
     // OpenCV seems to ignore fps setup
-    cap.set(CV_CAP_PROP_FPS , 30);
+    cap.set(CV_CAP_PROP_FPS , this->fps);
 
     // TODO new OpenCV interface
-    //cap.set(cv::CAP_PROP_FRAME_WIDTH,  640);
-    //cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-    //cap.set(cv::CAP_PROP_FPS , 30);
+    //cap.set(cv::CAP_PROP_FRAME_WIDTH,  this->imageWidth);
+    //cap.set(cv::CAP_PROP_FRAME_HEIGHT, this->imageHeight);
+    //cap.set(cv::CAP_PROP_FPS , this->fps);
     
     return cap;
 }

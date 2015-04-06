@@ -8,14 +8,24 @@ class ImageAcquisition {
     int indexLeft,
         indexRight;
 
+    int imageWidth,
+        imageHeight;
+
+    int fps;
+
     cv::VideoCapture capLeft,
                      capRight;
 
     cv::VideoCapture OpenCamera( int index );
 
     public:
-        ImageAcquisition( int _indexLeft,
-                          int _indexRight );
+        ImageAcquisition ( int _indexLeft, 
+                           int _indexRight,
+                           int _imageWidth,
+                           int _imageHeight,
+                           int _fps );
+
+        ~ImageAcquisition();
 
         int VerifyConnection();
 
