@@ -66,7 +66,7 @@ class CurbDetection {
     cv::Mat DownSample(const cv::Mat src, double factor);
 
     public:
-        CurbDetection( bool _demo );
+        CurbDetection( bool _demo=false );
         ~CurbDetection();
         Curb Detect( cv::Mat & src );
 };
