@@ -28,33 +28,19 @@ class ObjectDetection {
     int histHeight = 400;
 
     // detection properties
-    int binWideFactor = 3;
-    int minArea       = 10000; // derived for resolution of 640x480 = 307200
-    int minBase       = 2000;
-    int leftBinRange  = 1;
-    int rightBinRange = 5;
+    int minBase = 3100;
 
     cv::Mat ComputeHistogram( cv::Mat & src );
+
     cv::Mat HistogramPostprocessing ( cv::Mat & hist );
-    //int ClosestObject2( cv::Mat & hist, 
-    //                   int distance,
-    //                   cv::Mat & img ); // only for debug
 
     Object ClosestObject ( cv::Mat & hist,
                            cv::Mat & img );
 
     int BinId2Intensity( int binId );
 
-    void BinId2BinRange( int binId,
-                         int & lowerBinId,
-                         int & upperBinId );
-
     void ClearHistogram( cv::Mat & hist,
                          int offset );
-
-    int AreaOfObject( cv::Mat & hist,
-                      int lowerBin, 
-                      int upperBin );
 
     float ObjectDistance( cv::Mat & hist,
                           int lowerBin,

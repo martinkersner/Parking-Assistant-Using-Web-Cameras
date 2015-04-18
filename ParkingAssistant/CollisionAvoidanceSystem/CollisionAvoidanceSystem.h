@@ -12,6 +12,9 @@ class CollisionAvoidanceSystem {
 
     cv::Mat background;
 
+    float squareSize;
+    bool demo;
+
     Undistortion undistortion;
     DisparityMap disparityMap;
     Triangulation triangulation;
@@ -20,12 +23,20 @@ class CollisionAvoidanceSystem {
     public:
         CollisionAvoidanceSystem( std::string _extrinsics,
                                   std::string _distortions,
-                                  cv::Mat _background );
+                                  cv::Mat _background,
+                                  float _squareSize,
+                                  bool _demo=false );
 
         void Initialize();
 
         Object Detect( cv::Mat & left,
                        cv::Mat & right );
+
+        float Detect( cv::Mat & left,
+                      cv::Mat & right,
+                      cv::Mat & mask );
+
+        void SetNumberOfDisparities( int disparityNumber );
 };
 
 #endif // COLLISIONAVOIDANCESYSTEM_COLLISIONAVOIDANCESYSTEM_H_

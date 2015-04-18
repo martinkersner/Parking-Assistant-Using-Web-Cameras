@@ -91,6 +91,7 @@ cv::Mat DisparityMap::CalculateDisparity( cv::Mat & left,
     }
 
     // calculation disparity 
+    //this->sbm(left_8UC1, right_8UC1, disparity, CV_32F);
     this->sbm(left_8UC1, right_8UC1, disparity);
 
     return disparity;
