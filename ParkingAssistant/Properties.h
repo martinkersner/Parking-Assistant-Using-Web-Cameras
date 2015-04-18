@@ -7,6 +7,7 @@
 
 #define CHESS_ROWS      9
 #define CHESS_COLS      6 
+#define SQUARE_SIZE     2.8
 #define CALIB_TIMESPAN  100
 #define CALIB_IMAGES    21
 #define CALIB_DIR       "Chessboard/"
