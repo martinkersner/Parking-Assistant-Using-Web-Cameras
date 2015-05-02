@@ -23,8 +23,10 @@ Curb CurbDetection::Detect( cv::Mat & src ) {
     VecVecPoint curb;
     cv::Mat dst, edges, gray;
 
+    if (this->demo)
+        src = DownSample(src, this->resizeFactor); 
+
     // preprocessing
-    src = DownSample(src, this->resizeFactor); 
     cv::cvtColor(src, gray, CV_BGR2GRAY);
     cv::equalizeHist(gray, dst);
     RepeatBlurImage(dst, dst, this->repeatBlur);
