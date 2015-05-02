@@ -14,7 +14,7 @@
 Undistortion::Undistortion() 
 {}
 
-Undistortion::Undistortion( std::string fileName ) 
+Undistortion::Undistortion( std::string fileName ) : distortionFile(fileName)
 {
     LoadDistortion( fileName );
 }
@@ -53,4 +53,9 @@ cv::Mat Undistortion::CorrectRightImage( cv::Mat & rightImage )
            cv::INTER_LINEAR );
 
     return rightImageCorrected;
+}
+
+void Undistortion::ReloadDistortion()
+{
+    LoadDistortion( this->distortionFile );
 }

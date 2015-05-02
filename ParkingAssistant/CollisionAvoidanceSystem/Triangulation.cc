@@ -15,7 +15,9 @@ Triangulation::Triangulation()
 {}
 
 Triangulation::Triangulation( std::string fileName,
-                              float _squareSize ) : squareSize(_squareSize)
+                              float _squareSize ) : 
+    squareSize(_squareSize),
+    extrinsicsFile(fileName)
 {
     LoadExtrinsics(fileName);
     PrepareProjectionMatrix();
@@ -61,4 +63,10 @@ cv::Mat Triangulation::DisparityToDepth( cv::Mat & disparity )
     }
 
     return depth;
+}
+
+void Triangulation::ReloadExtrinsics()
+{
+    this->LoadExtrinsics( this->extrinsicsFile );
+    PrepareProjectionMatrix();
 }

@@ -37,6 +37,8 @@ class CollisionAvoidanceSystem {
                       cv::Mat & mask );
 
         void SetNumberOfDisparities( int disparityNumber );
+
+        void ReinitializeCalibrationFiles();
 };
 
 #endif // COLLISIONAVOIDANCESYSTEM_COLLISIONAVOIDANCESYSTEM_H_

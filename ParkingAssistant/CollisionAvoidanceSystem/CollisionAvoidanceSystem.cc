@@ -107,3 +107,9 @@ float CollisionAvoidanceSystem::Detect( cv::Mat & left,
 
     return distance;
 }
+
+void CollisionAvoidanceSystem::ReinitializeCalibrationFiles()
+{
+    this->undistortion.ReloadDistortion();
+    this->triangulation.ReloadExtrinsics();
+}

@@ -11,12 +11,14 @@ class Undistortion {
             rmap11;
 
     void LoadDistortion( std::string fileName );
+    std::string distortionFile;
 
     public:
-        Undistortion( );
+        Undistortion();
         Undistortion( std::string fileName );
         cv::Mat CorrectLeftImage( cv::Mat & leftImage );
         cv::Mat CorrectRightImage( cv::Mat & rightImage );
+        void ReloadDistortion();
 };
 
 #endif // COLLISIONAVOIDANCESYSTEM_UNDISTORTION_H_
