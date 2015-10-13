@@ -4,6 +4,8 @@
 
 Martin Kersner, <m.kersner@gmail.com>
 
+[Full text](https://dl.dropboxusercontent.com/u/13642345/Master_Thesis_Martin_Kersner.pdf)
+
 Automobile industry experienced growth of connection with information technologies in the past few years.
 Renowned companies announced development of self-driving cars that happened to be the objective for the next decade.
 Self-driving cars contain various sensors enabling detection of road lines, road signs, traffic lights or obstacles which might affect safety of ride.
