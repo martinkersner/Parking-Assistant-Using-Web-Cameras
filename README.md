@@ -1,10 +1,10 @@
-## Parking Assistant Using Web Cameras
-
-###Master Thesis
+## Parking Assistant Using Web Cameras, Master Thesis
 
 Martin Kersner, <m.kersner@gmail.com>
 
-[Full text](https://dl.dropboxusercontent.com/u/13642345/Master_Thesis_Martin_Kersner.pdf)
+06/2015
+
+[Full text](https://www.dropbox.com/s/lorzz7gobh0ev2v/Master_Thesis_Martin_Kersner.pdf?dl=0)
 
 Automobile industry experienced growth of connection with information technologies in the past few years.
 Renowned companies announced development of self-driving cars that happened to be the objective for the next decade.
